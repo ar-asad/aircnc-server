@@ -5,8 +5,9 @@ const morgan = require("morgan");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY);
 // const objectID=require('mongodb').ObjectId;
-
+console.log(process.env.PAYMENT_SECRET_KEY)
 //Please add .env file in .gitignore
 //DB_USER
 //DB_PASSWORD
@@ -185,6 +186,21 @@ async function run() {
             res.send(result)
         })
 
+        // create payment intent
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+            const { price } = req.body
+            const amount = parseFloat(price) * 100
+            if (!price) return
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card'],
+            })
+
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            })
+        })
 
         // Save a booking in database
         app.post('/bookings', async (req, res) => {
